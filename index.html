@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СЭД - Система электронного документооборота</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <i class="fas fa-shield-alt logo-icon"></i>
+                <span>СЭД Система</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-link active">Главная</a></li>
+                <li><a href="/registry.html" class="nav-link">Регистрация</a></li>
+                <li><a href="/main.html" class="nav-link">Вход</a></li>
+                <li><a href="/secure.html" class="nav-link">Защита</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <!-- Герой-секция -->
+        <section class="hero">
+            <h1>Безопасный документооборот</h1>
+            <p>Многоуровневая система защиты электронных документов с контролем целостности и шифрованием</p>
+            <div class="mt-3">
+                <a href="/registry.html" class="btn">Начать использовать</a>
+                <a href="/secure.html" class="btn btn-outline ml-2">Узнать о защите</a>
+            </div>
+        </section>
+
+        <!-- Особенности системы -->
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3>Защита от подмены</h3>
+                <p>Контроль целостности файлов с использованием SHA-256 хеширования при каждом доступе</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Аутентификация</h3>
+                <p>Многоуровневая система аутентификации с защитой от brute-force атак</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-file-shield"></i>
+                </div>
+                <h3>Шифрование</h3>
+                <p>Шифрование файлов и использование JWT токенов для безопасного доступа</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <h3>Логирование</h3>
+                <p>Детальное логирование всех операций с разделением по уровням важности</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h3>Производительность</h3>
+                <p>Оптимизированная работа с файлами любого размера и защита от DDoS атак</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h3>Контроль доступа</h3>
+                <p>Гибкая система ролей и прав доступа к документам и функциям системы</p>
+            </div>
+        </section>
+
+        <!-- Технологии -->
+        <section class="hero mt-4">
+            <h2>Технологии защиты</h2>
+            <p>Система использует современные технологии для обеспечения максимальной безопасности</p>
+            
+            <div class="features mt-3">
+                <div class="feature-card">
+                    <h4><i class="fas fa-hashtag"></i> SHA-256</h4>
+                    <p>Хеширование файлов для контроля целостности</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4><i class="fas fa-key"></i> JWT</h4>
+                    <p>Статусные токены для аутентификации</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4><i class="fas fa-user-lock"></i> BCrypt</h4>
+                    <p>Безопасное хранение паролей</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Футер -->
+    <footer style="text-align: center; padding: 2rem; color: #888; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 3rem;">
+        <p>Система электронного документооборота © 2024</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Все права защищены. Для доступа требуется авторизация.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

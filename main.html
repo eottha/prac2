@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система электронного документооборота</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2d2d2d;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            background-color: #1e1e1e;
+            margin-left: 250px;
+            width: calc(100% - 250px);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            background-color: #3d3d3d;
+        }
+        .nav-item i {
+            margin-right: 10px;
+        }
+        .search-bar {
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .search-bar input {
+            background-color: transparent;
+            border: none;
+            color: #ffffff;
+            width: 100%;
+            margin-left: 10px;
+        }
+        .document-list {
+            background-color: #2d2d2d;
+            border-radius: 5px;
+            padding: 10px;
+            min-height: 200px;
+        }
+        .document-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #3d3d3d;
+        }
+        .document-item:last-child {
+            border-bottom: none;
+        }
+        .document-item i {
+            margin-right: 10px;
+        }
+        .upload-form {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #2d2d2d;
+            border-radius: 5px;
+        }
+        input[type="file"] {
+            background-color: #3d3d3d;
+            color: #ffffff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .download-btn {
+            background-color: #2196F3;
+            margin-left: 10px;
+        }
+        .download-btn:hover {
+            background-color: #0b7dda;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            margin-left: 10px;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #4CAF50;
+            display: block;
+        }
+        .error {
+            background-color: #f44336;
+            display: block;
+        }
+        .user-info {
+            padding: 10px;
+            background-color: #3d3d3d;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h1>📁 СЭД</h1>
+            <p>Система электронного документооборота</p>
+        </div>
+        <div class="user-info" id="userInfo">
+            <div id="userName">Загрузка...</div>
+        </div>
+        <div class="nav-item" onclick="loadDocuments()">
+            <i>📄</i>
+            <span>Мои документы</span>
+        </div>
+        <div class="nav-item" onclick="document.getElementById('fileInput').click()">
+            <i>📤</i>
+            <span>Загрузить файл</span>
+        </div>
+        <div class="nav-item" onclick="showStats()">
+            <i>📊</i>
+            <span>Статистика</span>
+        </div>
+        <div class="nav-item" style="margin-top: auto;" onclick="logout()">
+            <i>🚪</i>
+            <span>Выход</span>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="search-bar">
+            <i>🔍</i>
+            <input type="text" id="searchInput" placeholder="Поиск документов...">
+        </div>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <div class="upload-form">
+            <h2>📤 Загрузите файл</h2>
+            <input type="file" id="fileInput" name="fileInput">
+            <br>
+            <button onclick="uploadFile()">Загрузить файл</button>
+            <button onclick="loadDocuments()" style="background-color: #2196F3;">Обновить список</button>
+        </div>
+        
+        <h2>📂 Мои документы</h2>
+        <div class="document-list" id="documentList">
+            <div class="document-item">Загрузка документов...</div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация
+        const API_BASE = 'http://localhost:3000';
+        let token = localStorage.getItem('sed_token');
+        let currentUser = null;
+
+        // Проверка авторизации
+        if (!token) {
+            window.location.href = '/registry.html';
+        } else {
+            // Пытаемся получить информацию о пользователе из токена
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUser = {
+                    username: payload.username,
+                    userId: payload.userId
+                };
+                document.getElementById('userName').textContent = `👤 ${currentUser.username}`;
+            } catch (e) {
+                console.error('Ошибка парсинга токена:', e);
+                logout();
+            }
+        }
+
+        // Функция загрузки файла
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('❌ Пожалуйста, выберите файл для загрузки', 'error');
+                return;
+            }
+
+            // Проверка размера файла (макс 50MB)
+            if (file.size > 50 * 1024 * 1024) {
+                showMessage('❌ Файл слишком большой (макс. 50MB)', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showMessage('📤 Загрузка файла...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showMessage(`✅ Файл "${file.name}" успешно загружен!`, 'success');
+                    fileInput.value = '';
+                    await loadDocuments();
+                } else {
+                    showMessage(`❌ Ошибка загрузки: ${result.error || 'Неизвестная ошибка'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка сети:', error);
+                showMessage('❌ Ошибка сети при загрузке файла', 'error');
+            }
+        }
+
+        // Загрузка списка документов
+        async function loadDocuments() {
+            showMessage('📥 Загрузка документов...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/documents`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 401) {
+                    showMessage('🚪 Сессия истекла. Пожалуйста, войдите снова.', 'error');
+                    setTimeout(() => logout(), 2000);
+                    return;
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateDocumentList(result.documents);
+                    showMessage(`✅ Загружено документов: ${result.documents.length}`, 'success');
+                    setTimeout(() => clearMessage(), 3000);
+                } else {
+                    showMessage(`❌ Ошибка загрузки документов: ${result.error}`, 'error');
+                    document.getElementById('documentList').innerHTML = 
+                        '<div class="document-item">Ошибка загрузки документов</div>';
+                }
+            } catch (error) {
+                console.error('Ошибка сети:', error);
+                showMessage('❌ Ошибка соединения с сервером', 'error');
+                document.getElementById('documentList').innerHTML = 
+                    '<div class="document-item">Ошибка соединения с сервером</div>';
+            }
+        }
+
+        // Обновление списка документов
+        function updateDocumentList(documents) {
+            const documentList = document.getElementById('documentList');
+            
+            if (!documents || documents.length === 0) {
+                documentList.innerHTML = '<div class="document-item">Нет загруженных документов</div>';
+                return;
+            }
+
+            let html = '';
+            
+            documents.forEach(doc => {
+                const fileIcon = getFileIcon(doc.type);
+                const fileSize = doc.sizeFormatted || formatFileSize(doc.size);
+                const uploadDate = new Date(doc.uploadedAt).toLocaleString();
+                
+                html += `
+                <div class="document-item" data-name="${doc.name.toLowerCase()}">
+                    <i>${fileIcon}</i>
+                    <span style="flex: 1;">
+                        <strong>${doc.name}</strong><br>
+                        <small>${fileSize} • ${uploadDate}</small>
+                    </span>
+                    <button class="download-btn" onclick="downloadDocument(${doc.id}, '${doc.name.replace(/'/g, "\\'")}')">
+                        📥 Скачать
+                    </button>
+                    <button class="delete-btn" onclick="deleteDocument(${doc.id}, '${doc.name.replace(/'/g, "\\'")}')">
+                        🗑️ Удалить
+                    </button>
+                </div>
+                `;
+            });
+            
+            documentList.innerHTML = html;
+            
+            // Применяем поиск если есть значение
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput.value) {
+                filterDocuments(searchInput.value);
+            }
+        }
+
+        // Скачивание документа
+        async function downloadDocument(id, name) {
+            try {
+                showMessage(`📥 Скачивание файла "${name}"...`, 'info');
+                
+                const response = await fetch(`${API_BASE}/api/download/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showMessage(`✅ Файл "${name}" скачивается...`, 'success');
+                    setTimeout(() => clearMessage(), 3000);
+                } else {
+                    const error = await response.json();
+                    showMessage(`❌ Ошибка скачивания: ${error.error || 'Неизвестная ошибка'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка скачивания:', error);
+                showMessage('❌ Ошибка сети при скачивании файла', 'error');
+            }
+        }
+
+        // Удаление документа
+        async function deleteDocument(id, name) {
+            if (!confirm(`Вы уверены, что хотите удалить файл "${name}"?`)) {
+                return;
+            }
+
+            try {
+                showMessage(`🗑️ Удаление файла "${name}"...`, 'info');
+                
+                const response = await fetch(`${API_BASE}/api/document/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showMessage(`✅ Файл "${name}" успешно удален`, 'success');
+                    await loadDocuments();
+                    setTimeout(() => clearMessage(), 3000);
+                } else {
+                    showMessage(`❌ Ошибка удаления: ${result.error || 'Неизвестная ошибка'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка удаления:', error);
+                showMessage('❌ Ошибка сети при удалении файла', 'error');
+            }
+        }
+
+        // Поиск документов
+        function filterDocuments(searchTerm) {
+            const items = document.querySelectorAll('.document-item[data-name]');
+            const term = searchTerm.toLowerCase();
+            
+            items.forEach(item => {
+                const fileName = item.getAttribute('data-name');
+                if (fileName.includes(term)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Показать статистику
+        async function showStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        const stats = result.stats;
+                        alert(`📊 Статистика:\n\n` +
+                              `📁 Всего файлов: ${stats.totalFiles}\n` +
+                              `💾 Общий размер: ${stats.totalSizeFormatted || formatFileSize(stats.totalSize)}\n` +
+                              `⏰ Последняя загрузка: ${stats.lastUpload ? new Date(stats.lastUpload).toLocaleString() : 'Нет файлов'}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка получения статистики:', error);
+                showMessage('❌ Ошибка получения статистики', 'error');
+            }
+        }
+
+        // Выход из системы
+        function logout() {
+            localStorage.removeItem('sed_token');
+            window.location.href = '/registry.html';
+        }
+
+        // Вспомогательные функции
+        function showMessage(message, type = 'info') {
+            const statusElement = document.getElementById('statusMessage');
+            if (statusElement) {
+                statusElement.textContent = message;
+                statusElement.className = 'status-message ' + type;
+                statusElement.style.display = 'block';
+            } else {
+                console.log(`Сообщение (${type}): ${message}`);
+            }
+        }
+
+        function clearMessage() {
+            const statusElement = document.getElementById('statusMessage');
+            if (statusElement) {
+                statusElement.style.display = 'none';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function getFileIcon(mimeType) {
+            if (!mimeType) return '📄';
+            
+            if (mimeType.includes('pdf')) return '📕';
+            if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+            if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
+            if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📽️';
+            if (mimeType.includes('image')) return '🖼️';
+            if (mimeType.includes('video')) return '🎬';
+            if (mimeType.includes('audio')) return '🎵';
+            if (mimeType.includes('zip') || mimeType.includes('compressed') || mimeType.includes('archive')) return '🗜️';
+            if (mimeType.includes('text')) return '📃';
+            
+            return '📄';
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            // Загружаем документы при загрузке страницы
+            loadDocuments();
+            
+            // Настройка поиска
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    filterDocuments(e.target.value);
+                });
+            }
+            
+            // Автоматическая загрузка при выборе файла
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', () => {
+                    if (fileInput.files.length > 0) {
+                        uploadFile();
+                    }
+                });
+            }
+            
+            // Проверка соединения
+            checkConnection();
+        });
+
+        // Проверка соединения с сервером
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                if (!response.ok) {
+                    showMessage('⚠️ Проблемы с соединением с сервером', 'error');
+                }
+            } catch (error) {
+                showMessage('⚠️ Сервер не отвечает. Проверьте, запущен ли сервер.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

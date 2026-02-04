@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация и вход - СЭД</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <i class="fas fa-shield-alt logo-icon"></i>
+                <span>СЭД Система</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-link">Главная</a></li>
+                <li><a href="/registry.html" class="nav-link active">Регистрация</a></li>
+                <li><a href="/secure.html" class="nav-link">Защита</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="showTab('login')">
+                    <i class="fas fa-sign-in-alt"></i> Вход
+                </div>
+                <div class="auth-tab" onclick="showTab('register')">
+                    <i class="fas fa-user-plus"></i> Регистрация
+                </div>
+            </div>
+
+            <!-- Форма входа -->
+            <form id="loginForm" class="auth-form active" onsubmit="login(event)">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-user"></i> Имя пользователя
+                    </label>
+                    <input type="text" class="form-input" id="loginUsername" 
+                           placeholder="Введите имя пользователя" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-lock"></i> Пароль
+                    </label>
+                    <input type="password" class="form-input" id="loginPassword" 
+                           placeholder="Введите пароль" required>
+                </div>
+                
+                <div id="loginError" class="mt-2" style="color: #f87171; display: none;"></div>
+                
+                <button type="submit" class="btn btn-block mt-3">
+                    <i class="fas fa-sign-in-alt"></i> Войти в систему
+                </button>
+                
+                <div class="text-center mt-2">
+                    <small style="color: #888;">
+                        Тестовый пользователь: admin / admin123
+                    </small>
+                </div>
+            </form>
+
+            <!-- Форма регистрации -->
+            <form id="registerForm" class="auth-form" onsubmit="register(event)">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-user"></i> Имя пользователя
+                    </label>
+                    <input type="text" class="form-input" id="regUsername" 
+                           placeholder="Придумайте имя пользователя" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-lock"></i> Пароль
+                    </label>
+                    <input type="password" class="form-input" id="regPassword" 
+                           placeholder="Не менее 6 символов" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-lock"></i> Подтверждение пароля
+                    </label>
+                    <input type="password" class="form-input" id="regConfirmPassword" 
+                           placeholder="Повторите пароль" required>
+                </div>
+                
+                <div id="registerError" class="mt-2" style="color: #f87171; display: none;"></div>
+                
+                <button type="submit" class="btn btn-block mt-3">
+                    <i class="fas fa-user-plus"></i> Зарегистрироваться
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Показываем нужную вкладку
+        function showTab(tabName) {
+            // Обновляем активные табы
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.classList.toggle('active', 
+                    tab.textContent.includes(tabName === 'login' ? 'Вход' : 'Регистрация'));
+            });
+            
+            // Показываем нужную форму
+            document.getElementById('loginForm').classList.toggle('active', tabName === 'login');
+            document.getElementById('registerForm').classList.toggle('active', tabName === 'register');
+            
+            // Очищаем ошибки
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('registerError').style.display = 'none';
+        }
+
+        // Функция для показа уведомлений
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                    type === 'error' ? 'exclamation-circle' : 
+                                    type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <div>${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Удаляем уведомление через 5 секунд
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Вход в систему
+        async function login(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorElement = document.getElementById('loginError');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Сохраняем токен и данные пользователя
+                    localStorage.setItem('sed_token', data.token);
+                    localStorage.setItem('sed_user', JSON.stringify(data.user));
+                    
+                    showNotification('Успешный вход! Перенаправление...', 'success');
+                    
+                    // Перенаправляем на основную страницу через 1 секунду
+                    setTimeout(() => {
+                        window.location.href = '/main.html';
+                    }, 1000);
+                } else {
+                    errorElement.textContent = data.error;
+                    errorElement.style.display = 'block';
+                    showNotification(data.error, 'error');
+                }
+            } catch (error) {
+                errorElement.textContent = 'Ошибка соединения с сервером';
+                errorElement.style.display = 'block';
+                showNotification('Ошибка соединения с сервером', 'error');
+            }
+        }
+
+        // Регистрация
+        async function register(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const errorElement = document.getElementById('registerError');
+            
+            // Проверка паролей
+            if (password !== confirmPassword) {
+                errorElement.textContent = 'Пароли не совпадают';
+                errorElement.style.display = 'block';
+                showNotification('Пароли не совпадают', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorElement.textContent = 'Пароль должен содержать минимум 6 символов';
+                errorElement.style.display = 'block';
+                showNotification('Пароль должен содержать минимум 6 символов', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Регистрация успешна! Теперь войдите.', 'success');
+                    
+                    // Переключаем на вкладку входа
+                    showTab('login');
+                    
+                    // Заполняем имя пользователя
+                    document.getElementById('loginUsername').value = username;
+                    document.getElementById('loginPassword').value = '';
+                } else {
+                    errorElement.textContent = data.error;
+                    errorElement.style.display = 'block';
+                    showNotification(data.error, 'error');
+                }
+            } catch (error) {
+                errorElement.textContent = 'Ошибка соединения с сервером';
+                errorElement.style.display = 'block';
+                showNotification('Ошибка соединения с сервером', 'error');
+            }
+        }
+
+        // Проверяем, если пользователь уже авторизован
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('sed_token');
+            if (token) {
+                window.location.href = '/main.html';
+            }
+        });
+    </script>
+</body>
+</html>
